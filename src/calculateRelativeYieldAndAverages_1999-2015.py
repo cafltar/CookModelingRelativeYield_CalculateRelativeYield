@@ -100,10 +100,10 @@ def main(
     date_today = datetime.datetime.now().strftime("%Y%m%d")
     
     relative_yield_df.to_csv(
-        outputPath / "relativeYield_1999-2015_{}.csv".format(date_today), 
+        outputPath / "relativeYield_1999-2015_{}_P3A1.csv".format(date_today), 
         index = False)
     running_avg_df.to_csv(
-        outputPath / "relativeYieldAverage_1999-2015_{}.csv".format(date_today),
+        outputPath / "relativeYieldAverage_1999-2015_{}_P3A1.csv".format(date_today),
         index=False)
 
 if __name__ == "__main__":
