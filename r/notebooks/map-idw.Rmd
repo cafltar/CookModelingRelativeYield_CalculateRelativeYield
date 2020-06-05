@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r setup}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(DT)
+library(gstat)
+library(raster)
+library(maptools)
+library(latticeExtra)
+#map_cookeast_idw(sf.bd1998, cookeast, AvgBD, seq(1.1,1.7,by=0.1), cols <- blues9[3:9])
+```
+
+```{r idwMap, include=FALSE}
+map_idw <- function(simpleFeatureObj, 
+                    cookEastBoundary, 
+                    factor,
+                    cutSeq,
+                    colSeq) {
+  # Help with styles: https://casoilresource.lawr.ucdavis.edu/software/r-advanced-statistical-package/working-spatial-data/customizing-maps-r-spplot-and-latticeextra-functions/
+  
+  # TODO: add params for hardcoded values
+  # Convert sf to sp
+  sp <- as(simpleFeatureObj, "Spatial")
+  #sp$Crop <- as.factor(sp$Crop)
+  
+  # Create grid for IDW
+  e <- extent(sp)
+  grid <- raster(e)
+  proj4string(grid) <- proj4string(sp)
+  res(grid) <- c(0.00004, 0.00004)
+  grid <- as(grid, "SpatialPointsDataFrame")
+  
+  # Passing variable names is tricky: https://stackoverflow.com/a/34079727
+  var <- eval(substitute(factor), simpleFeatureObj)
+  var.name <- substitute(var)
+  
+  # Generate IDW 
+  idw <- idw(formula = var ~ 1, locations = sp, newdata = grid, idp = 4)
+  
+  # Clip and map
+  idw.sf.clip <- st_intersection(st_as_sf(idw), cookEastBoundary)
+  idw.clip <- as(idw.sf.clip, "Spatial")
+  
+    p <- spplot(idw.clip, 
+       "var1.pred", 
+       cuts = cutSeq, 
+       col.regions = colSeq,
+       #sp.layout = list("sp.points", sp, pch = 16, cex = 0.5, col = sp$Crop))
+       #key.space = list(x=0.1, y = 0.93, corner = c(0,.95)),
+       key.space = "right",
+       sp.layout = list("sp.points", sp, pch = 16, cex = 0.3, col = "black"))
+  #p <- update(p, key = simpleKey(levels(sp$Crop), points = T, columns = 1, title = "Crop", cex=0.5,
+  p <- update(p)
+  p
+}
+```
+
+```{r loadData, include=FALSE}
+df <- read_csv("../input/relativeYield_1999-2015_20200601_P3A1.csv")
+df.avg <- read_csv("../input/relativeYieldAverage_1999-2015_20200601_P3A1.csv")
+
+coords <- read.csv("../input/HY1999-2016_20200130_P3A1.csv") %>% 
+  filter(HarvestYear == 2015) %>% 
+  dplyr::select(ID2, Latitude, Longitude) 
+  
+df.coords <- df %>% 
+  merge(coords, by = "ID2")
+sf <- st_as_sf(df.coords, coords = c("Longitude", "Latitude"), crs = 4326)
+
+df.avg.coords <- df.avg %>%
+  merge(coords, by = "ID2")
+sf.avg <- st_as_sf(df.avg.coords, coords = c("Longitude", "Latitude"), crs = 4326)
+                   
+cookeast <- st_read("../input/cookeast_boundary_20190924.geojson")
+```
+
+## Explore data by table
+
+```{r datatable}
+df %>% 
+  datatable(rownames = F)
+```
+
+## Map 1999-2015 Average relative yield
+```{r}
+
+sf.avg %>% 
+  dplyr::select(ID2, MeanRelativeYield_1999_2015) %>% 
+  map_idw(cookeast, MeanRelativeYield_1999_2015, seq(0.5, 1.5, by = 0.16), cols <- blues9[3:9])
+
+```
