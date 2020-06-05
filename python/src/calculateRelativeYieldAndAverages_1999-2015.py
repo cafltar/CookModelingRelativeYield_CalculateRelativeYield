@@ -109,7 +109,7 @@ def main(
 if __name__ == "__main__":
     # params
     inputYieldPath = pathlib.Path.cwd() / "input" / "HY1999-2016_20200130_P3A1.csv"
-    inputTreatmentPath = pathlib.Path.cwd() / "input" / "georeferencepoint_treatments_cookeast_1999-2016_20200522.csv"
+    inputTreatmentPath = pathlib.Path.cwd() / "input" / "georeferencepoint_treatments_cookeast_1999-2016_20200605.csv"
     outputPath = pathlib.Path.cwd() / "output"
 
     main(inputYieldPath, inputTreatmentPath, outputPath)
